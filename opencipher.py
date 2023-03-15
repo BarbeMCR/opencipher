@@ -161,7 +161,7 @@ def _decrypt_input_ui():
     print("3. Use multiple tables at multiple intervals")
     choice = input("  ? ")
     print()
-    key = input("Insert a secret key: ")
+    key = input("Insert the secret key: ")
     print()
     print("Now you can type the text you want to decrypt (hit 'return' to end input).")
     text = input()
