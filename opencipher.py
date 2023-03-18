@@ -437,9 +437,9 @@ def decrypt_string(enc_string, secret, multiple=False, intervals=False):
         i = len(enc_string)
         p = 0
         while i > 0:
-            for b in enc_string[p:p+interval]:
+            for b in bstring[p:p+interval]:
                 for k, v in table.items():
-                    if v == hex(b):
+                    if v == b:
                         list_string.append(int(k, 16).to_bytes().decode())
             table = {}
             for n in range(256):
