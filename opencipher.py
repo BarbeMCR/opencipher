@@ -300,7 +300,7 @@ def encrypt_string(string, secret, multiple=False, intervals=False):
     bstring = string.encode()
     if not multiple:
         for b in bstring:
-            list_enc_string.append(table[b])
+            list_enc_string.append(hex(table[b]))
     else:
         interval = random.randint(1, 16)
         i = len(string)
