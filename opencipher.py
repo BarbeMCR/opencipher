@@ -74,7 +74,7 @@ def _print_main_menu():
     print("0. Exit")
     choice = input("  ? ")
     return choice
-    
+
 def _encrypt_ui():
     print()
     print("Select a mode from the list below:")
@@ -88,18 +88,15 @@ def _encrypt_ui():
     match choice:
         case '1':
             encrypt(file, secret, multiple=False)
-            print("Finished!")
         case '2':
             encrypt(file, secret, multiple=True, intervals=False)
-            print("Finished!")
         case '3':
             encrypt(file, secret, multiple=True, intervals=True)
-            print("Finished!")
         case _:
             print("Invalid choice. Using single table...")
             encrypt(file, secret)
-            print("Finished!")
-            
+    print("Finished!")
+
 def _decrypt_ui():
     print()
     print("Select the correct mode for your file from the list below:")
@@ -115,18 +112,15 @@ def _decrypt_ui():
     match choice:
         case '1':
             decrypt(file, key, auth, secret, multiple=False)
-            print("Finished!")
         case '2':
             decrypt(file, key, auth, secret, multiple=True, intervals=False)
-            print("Finished!")
         case '3':
             decrypt(file, key, auth, secret, multiple=True, intervals=True)
-            print("Finished!")
         case _:
             print("Invalid choice. Using single table...")
             decrypt(file, key, auth, secret)
-            print("Finished!")
-            
+    print("Finished!")
+
 def _encrypt_input_ui():
     print()
     print("Select a mode from the list below:")
@@ -152,7 +146,7 @@ def _encrypt_input_ui():
             e = encrypt_string(text, key)
     print("The encrypted text is:")
     print(e)
-    
+
 def _decrypt_input_ui():
     print()
     print("Select the correct mode for your text from the list below:")
@@ -178,7 +172,7 @@ def _decrypt_input_ui():
             d = decrypt_string(text, key)
     print("The decrypted text is:")
     print(d)
-    
+
 def _authenticate_ui():
     print()
     file = input("Insert the path to the .lock file: ")
@@ -190,7 +184,7 @@ def _authenticate_ui():
     with open(auth, 'a') as a:
         a.write(h)
     print("Finished!")
-    
+
 def _hash_ui():
     print()
     file = input("Insert the path to the .lock file: ")
@@ -200,7 +194,7 @@ def _hash_ui():
     print()
     print("The main hash is:")
     print(h)
-    
+
 def _check_tampering_ui():
     print()
     file = input("Insert the path to the .lock file: ")
@@ -214,7 +208,7 @@ def _check_tampering_ui():
     else:
         print()
         print("The files HAVE been tampered with.")
-        
+
 def _check_corruption_ui():
     print()
     file = input("Insert the path to the .lock file: ")
@@ -227,18 +221,18 @@ def _check_corruption_ui():
     else:
         print()
         print("The files ARE corrupted.")
-            
+
 def encrypt(file, secret, multiple=False, intervals=False):
     """Encrypt a file.
-    
+
     Gets called like this:
     opencipher.encrypt(file, secret, [multiple], [intervals])
-    
+
     file: the path to the file to encrypt
     secret: the secret key used for authentication
     multiple: whether to use multiple tables (False by default)
     intervals: whether to use multiple intervals in multiple tables mode (False by default)
-    
+
     Writes <path>.(lock, key, auth):
     <path>.lock: the encrypted file
     <path>.key: the encrypted key to decrypt the file
@@ -252,18 +246,13 @@ def encrypt(file, secret, multiple=False, intervals=False):
             #table[f"{i:#0{4}x}"] = f"{random.choice(range(255)):#0{4}x}"  # Applies padding such as 0xa -> 0x0a
             #if table[f"{i:#0{4}x}"] not in tuple(table.values())[:-1]:
                 #break
-            table[hex(i)] = hex(random.choice(range(256)))
-            if table[hex(i)] not in tuple(table.values())[:-1]:
+            table[i] = random.choice(range(256))
+            if table[i] not in tuple(table.values())[:-1]:
                 break
     if not multiple:
         with open(file, 'rb') as f, open(f'{file}.lock', 'wb') as o:
             for b in f.read():
-                o.write(int(table[hex(b)], 16).to_bytes())
-        encrypt_key(raw_key, f'{file}.key', secret)
-        authenticate(f'{file}.lock', f'{file}.key', f'{file}.auth', secret)
-        h = hash(f'{file}.lock', f'{file}.key', f'{file}.auth')
-        with open(f'{file}.auth', 'a') as a:
-            a.write(h)
+                o.write(table[b].to_bytes())
     else:
         interval = random.randint(1, 16)
         with open(file, 'rb') as f, open(f'{file}.lock', 'wb') as o:
@@ -271,59 +260,59 @@ def encrypt(file, secret, multiple=False, intervals=False):
             f.seek(0)
             while i > 0:
                 for b in f.read(interval):
-                    o.write(int(table[hex(b)], 16).to_bytes())
+                    o.write(table[b].to_bytes())
                 table = {}
                 for n in range(256):
                     while True:
-                        table[hex(n)] = hex(random.choice(range(256)))
-                        if table[hex(n)] not in tuple(table.values())[:-1]:
+                        table[n] = random.choice(range(256))
+                        if table[n] not in tuple(table.values())[:-1]:
                             break
                 i -= interval
                 if intervals:
                     interval = random.randint(1, 16)
-        encrypt_key(raw_key, f'{file}.key', secret)
-        authenticate(f'{file}.lock', f'{file}.key', f'{file}.auth', secret)
-        h = hash(f'{file}.lock', f'{file}.key', f'{file}.auth')
-        with open(f'{file}.auth', 'a') as a:
-            a.write(h)
-            
+    encrypt_key(raw_key, f'{file}.key', secret)
+    authenticate(f'{file}.lock', f'{file}.key', f'{file}.auth', secret)
+    h = hash(f'{file}.lock', f'{file}.key', f'{file}.auth')
+    with open(f'{file}.auth', 'a') as a:
+        a.write(h)
+
 def encrypt_string(string, secret, multiple=False, intervals=False):
     """Encrypt a string.
-    
+
     Gets called like this:
     opencipher.encrypt_string(string, secret, [multiple], [intervals])
-    
+
     string: the string to encrypt
     secret: the secret key used for authentication
     multiple: whether to use multiple tables (False by default)
     intervals: whether to use multiple intervals in multiple tables mode (False by default)
-    
+
     Return the encrypted string.
     """
     random.seed(secret)
     table = {}
     for i in range(256):
         while True:
-            table[hex(i)] = hex(random.choice(range(256)))
-            if table[hex(i)] not in tuple(table.values())[:-1]:
+            table[i] = random.choice(range(256))
+            if table[i] not in tuple(table.values())[:-1]:
                 break
     list_enc_string = []
     bstring = string.encode()
     if not multiple:
         for b in bstring:
-            list_enc_string.append(table[hex(b)])
+            list_enc_string.append(table[b])
     else:
         interval = random.randint(1, 16)
         i = len(string)
         p = 0
         while i > 0:
             for b in bstring[p:p+interval]:
-                list_enc_string.append(table[hex(b)])
+                list_enc_string.append(hex(table[b]))
             table = {}
             for n in range(256):
                 while True:
-                    table[hex(n)] = hex(random.choice(range(256)))
-                    if table[hex(n)] not in tuple(table.values())[:-1]:
+                    table[n] = random.choice(range(256))
+                    if table[n] not in tuple(table.values())[:-1]:
                         break
             i -= interval
             p += interval
@@ -334,40 +323,40 @@ def encrypt_string(string, secret, multiple=False, intervals=False):
 
 def encrypt_key(raw_key, key, secret):
     """Encrypt an OpenCipher key.
-    
+
     Gets called like this:
     opencipher.encrypt_key(raw_key, key, secret)
-    
+
     raw_key: the unencrypted key object (a random.getstate() return value or compatible)
     key: the path to write the encrypted key to
     secret: the secret key used for authentication
-    
+
     Writes <path>.key: the encrypted key
     """
     random.seed(secret)
     table = {}
     for i in range(256):
         while True:
-            table[hex(i)] = hex(random.choice(range(256)))
-            if table[hex(i)] not in tuple(table.values())[:-1]:
+            table[i] = random.choice(range(256))
+            if table[i] not in tuple(table.values())[:-1]:
                 break
     with open(key, 'wb') as k:
         for b in pickle.dumps(raw_key):
-            k.write(int(table[hex(b)], 16).to_bytes())
-            
+            k.write(table[b].to_bytes())
+
 def decrypt(file, key, auth, secret, multiple=False, intervals=False):
     """Decrypt a file.
-    
+
     Gets called like this:
     opencipher.decrypt(file, key, auth, secret, [multiple], [intervals])
-    
+
     file: the path to the file to decrypt
     key: the path to key used to decrypt the file
     auth: the path to the authentication file
     secret: the secret key used for authentication
     multiple: whether to use multiple tables (False by default)
     intervals: whether to use multiple intervals in multiple tables mode (False by default)
-    
+
     Writes <path> from <path>.lock
     """
     if check_hash(file, key, auth) and check_tampering(file, key, auth, secret):
@@ -376,15 +365,15 @@ def decrypt(file, key, auth, secret, multiple=False, intervals=False):
         table = {}
         for i in range(256):
             while True:
-                table[hex(i)] = hex(random.choice(range(256)))
-                if table[hex(i)] not in tuple(table.values())[:-1]:
+                table[i] = random.choice(range(256))
+                if table[i] not in tuple(table.values())[:-1]:
                     break
         if not multiple:
             with open(file, 'rb') as o, open(file.removesuffix('.lock'), 'wb') as f:
                 for b in o.read():
                     for k, v in table.items():
-                        if v == hex(b):
-                            f.write(int(k, 16).to_bytes())
+                        if b == v:
+                            f.write(k.to_bytes())
         else:
             interval = random.randint(1, 16)
             with open(file, 'rb') as o, open(file.removesuffix('.lock'), 'wb') as f:
@@ -393,45 +382,45 @@ def decrypt(file, key, auth, secret, multiple=False, intervals=False):
                 while i > 0:
                     for b in o.read(interval):
                         for k, v in table.items():
-                            if v == hex(b):
-                                f.write(int(k, 16).to_bytes())
+                            if b == v:
+                                f.write(k.to_bytes())
                     table = {}
                     for n in range(256):
                         while True:
-                            table[hex(n)] = hex(random.choice(range(256)))
-                            if table[hex(n)] not in tuple(table.values())[:-1]:
+                            table[n] = random.choice(range(256))
+                            if table[n] not in tuple(table.values())[:-1]:
                                 break
                     i -= interval
                     if intervals:
                         interval = random.randint(1, 16)
-                        
+
 def decrypt_string(enc_string, secret, multiple=False, intervals=False):
     """Decrypt a string.
-    
+
     Gets called like this:
     opencipher.decrypt_string(enc_string, secret, [multiple], [intervals])
-    
+
     enc_string: the string to decrypt
     secret: the secret key used for authentication
     multiple: whether to use multiple tables (False by default)
     intervals: whether to use multiple intervals in multiple tables mode (False by default)
-    
+
     Return the decrypted string.
     """
     random.seed(secret)
     table = {}
     for i in range(256):
         while True:
-            table[hex(i)] = hex(random.choice(range(256)))
-            if table[hex(i)] not in tuple(table.values())[:-1]:
+            table[i] = random.choice(range(256))
+            if table[i] not in tuple(table.values())[:-1]:
                 break
     bstring = enc_string.split(':')
     list_string = []
     if not multiple:
         for b in bstring:
             for k, v in table.items():
-                if v == b:
-                    list_string.append(int(k, 16).to_bytes().decode())
+                if int(b, 16) == v:
+                    list_string.append(k.to_bytes().decode())
     else:
         interval = random.randint(1, 16)
         i = len(enc_string)
@@ -439,13 +428,13 @@ def decrypt_string(enc_string, secret, multiple=False, intervals=False):
         while i > 0:
             for b in bstring[p:p+interval]:
                 for k, v in table.items():
-                    if v == b:
-                        list_string.append(int(k, 16).to_bytes().decode())
+                    if int(b, 16) == v:
+                        list_string.append(k.to_bytes().decode())
             table = {}
             for n in range(256):
                 while True:
-                    table[hex(n)] = hex(random.choice(range(256)))
-                    if table[hex(n)] not in tuple(table.values())[:-1]:
+                    table[n] = random.choice(range(256))
+                    if table[n] not in tuple(table.values())[:-1]:
                         break
             i -= interval
             p += interval
@@ -456,13 +445,13 @@ def decrypt_string(enc_string, secret, multiple=False, intervals=False):
 
 def decrypt_key(key, secret):
     """Decrypt an OpenCipher key.
-    
+
     Gets called like this:
     opencipher.decrypt_key(key, secret)
-    
+
     key: the path to read the encrypted key from
     secret: the secret key used for authentication
-    
+
     Return raw_key (a random.getstate() return value or compatible unencrypted key object).
     """
     random.seed(secret)
@@ -470,29 +459,29 @@ def decrypt_key(key, secret):
     r = io.BytesIO()
     for i in range(256):
         while True:
-            table[hex(i)] = hex(random.choice(range(256)))
-            if table[hex(i)] not in tuple(table.values())[:-1]:
+            table[i] = random.choice(range(256))
+            if table[i] not in tuple(table.values())[:-1]:
                 break
     with open(key, 'rb') as e:
         for b in e.read():
             for k, v in table.items():
-                if v == hex(b):
-                    r.write(int(k, 16).to_bytes())
+                if b == v:
+                    r.write(k.to_bytes())
     r.seek(0)
     raw_key = pickle.loads(r.read())
     return raw_key
-    
+
 def authenticate(lock, key, auth, secret):
     """Generate digests for lock and key with secret.
-    
+
     Gets called like this:
     opencipher.authenticate(lock, key, auth, secret)
-    
+
     lock: the path to the encrypted file
     key: the path to the encrypted key to the encrypted file
     auth: the path to write the digests to
     secret: the secret key to use
-    
+
     Writes <path>.auth: the digests storage
     """
     with open(lock, 'rb') as l, open(key, 'rb') as k:
@@ -501,35 +490,35 @@ def authenticate(lock, key, auth, secret):
     with open(auth, 'w') as a:
         a.write(lock_digest)
         a.write(key_digest)
-        
+
 def hash(lock, key, auth):
     """Generate a single hash for lock, key and auth.
-    
+
     Gets called like this:
     opencipher.hash(lock, key, auth)
-    
+
     lock: the path to the encrypted file
     key: the path to the encrypted key to the encrypted file
     auth: the path to the digests
-    
+
     Return h: the computed SHA-512 hash
     """
     with open(lock, 'rb') as l, open(key, 'rb') as k, open(auth, 'rb') as a:
         all_bytes = l.read() + k.read() + a.read(256)
     h = hashlib.sha512(all_bytes).hexdigest()
     return h
-    
+
 def check_tampering(lock, key, auth, secret):
     """Compare actual digests with stored digests for lock and key.
-    
+
     Gets called like this:
     opencipher.check_tampering(lock, key, auth, secret)
-    
+
     lock: the path to the encrypted file
     key: the path to the encrypted key to the encrypted file
     auth: the path to read the digests from
     secret: the secret key to use
-    
+
     Return True if the digests are the same or False if they aren't.
     """
     with open(auth, 'r') as a:
@@ -541,17 +530,17 @@ def check_tampering(lock, key, auth, secret):
         lock_digest = hmac.new(secret.encode(), l.read(), 'sha512').hexdigest()
         key_digest = hmac.new(secret.encode(), k.read(), 'sha512').hexdigest()
     return hmac.compare_digest(stored_lock_digest, lock_digest) and hmac.compare_digest(stored_key_digest, key_digest)
-        
+
 def check_hash(lock, key, auth):
     """Compare actual hash with stored hash for lock, key and auth.
-    
+
     Gets called like this:
     opencipher.check_hash(lock, key, auth)
-    
+
     lock: the path to the encrypted file
     key: the path to the encrypted key to the encrypted file
     auth: the path to the digests
-    
+
     Return True if the hashes are the same or False if they aren't.
     """
     with open(auth, 'r') as a:
