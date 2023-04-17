@@ -27,7 +27,7 @@ The encryption algorithm works as follows:
 - the encryption products (`file.lock` and `file.key`) are authenticated to `file.auth` using `opencipher.authenticate`
 - `file.lock`, `file.key` and `file.auth` are hashed using `opencipher.hash` and the result is appended to `file.auth`
 
-`opencipher.encrypy_string(string, secret, multiple=False, intervals=False)`
+`opencipher.encrypt_string(string, secret, multiple=False, intervals=False)`
 
 Encrypt `string`, which must be a valid `str`. Returns an encrypted copy of `string`.
 
