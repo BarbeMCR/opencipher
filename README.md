@@ -1,4 +1,4 @@
-# BarbeMCR's Opencipher
+# BarbeMCR's OpenCipher
 An encryption/decryption application and API designed to obfuscate files and text
 
 **_DISCLAIMER: BarbeMCR's OpenCipher is not meant for actual cryptographic purposes!_**
